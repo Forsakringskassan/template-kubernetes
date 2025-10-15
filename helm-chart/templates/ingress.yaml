@@ -28,7 +28,7 @@ spec:
               service:
                 name: {{ $.Release.Name }}-{{ if eq .backend "quarkus" }}{{ (index $.Values.quarkus 0).name }}{{ else if eq .backend "apache" }}{{ (index $.Values.apache 0).name }}{{ else }}{{ .backend }}{{ end }}
                 port:
-                  number: {{ if eq .backend "quarkus" }}8080{{ else if eq .backend "apache" }}80{{ else }}8080{{ end }}
+                  number: 8080
           {{- end }}
     {{- end }}
 {{- end }}
