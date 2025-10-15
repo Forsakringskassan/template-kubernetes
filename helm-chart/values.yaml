@@ -5,6 +5,15 @@ quarkus:
     image:
       repository: ghcr.io/forsakringskassan/template-quarkus-app
       tag: snapshot
+    properties: |
+      fullmakts.api.base-url=http://whatever/
+
+      quarkus.http.port=8080
+      quarkus.http.host=0.0.0.0
+      quarkus.log.level=INFO
+      quarkus.log.console.enable=true
+      quarkus.health.enabled=true
+      quarkus.health.openapi.included=true
 
 apache:
   - name: apache
