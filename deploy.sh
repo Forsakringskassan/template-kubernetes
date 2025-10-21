@@ -26,11 +26,51 @@ fi
 
 # Start minikube if not running
 echo "🔧 Starting Minikube..."
-minikube start --driver=docker --cpus=2 --memory=4096
+minikube start --driver=docker --cpus=4 --memory=8192
 
-# Enable ingress addon
+# Wait for the Kubernetes API server to be ready
+echo "⏳ Waiting for Kubernetes API server to be ready..."
+for i in {1..60}; do
+  if kubectl get --raw='/readyz?verbose' &>/dev/null; then
+    echo "✅ Kubernetes API server is ready"
+    break
+  fi
+  echo "   Attempt $i/60: Waiting for API server to be fully ready..."
+  sleep 5
+done
+
+# Verify cluster is accessible
+if ! kubectl get --raw='/readyz?verbose' &>/dev/null; then
+  echo "❌ Kubernetes API server is not accessible after waiting"
+  exit 1
+fi
+
+# Wait for all core system pods to be ready
+echo "⏳ Waiting for core system pods to be ready..."
+kubectl wait --for=condition=ready pod --all -n kube-system --timeout=180s || true
+
+# Additional wait to ensure API server is stable
+echo "⏳ Ensuring API server is fully stable..."
+sleep 20
+
+# Enable ingress addon with retry logic
 echo "🌐 Enabling ingress addon..."
-minikube addons enable ingress
+ADDON_ENABLED=false
+for i in {1..10}; do
+  echo "   Attempt $i/10: Enabling ingress addon..."
+  if minikube addons enable ingress 2>&1 | grep -q "enabled\|already enabled"; then
+    echo "✅ Ingress addon enabled successfully"
+    ADDON_ENABLED=true
+    break
+  fi
+  echo "   API server not ready yet, waiting..."
+  sleep 15
+done
+
+if [ "$ADDON_ENABLED" = false ]; then
+  echo "❌ Failed to enable ingress addon after multiple attempts"
+  exit 1
+fi
 
 # Wait for ingress controller to be ready
 echo "⏳ Waiting for ingress controller to be ready..."
